@@ -23,6 +23,15 @@ df.stock <- df %>%
   summarise(count=n()) %>%
   mutate(stock1=cumsum(count))
 
+#Q1 Alternative
+df.stock_alt <- df %>%
+  filter(Classification=="Painting") %>%
+  mutate(month=month(DateAcquired, label=TRUE))%>%
+  group_by(month) %>%
+  summarise(total=n())%>%
+  filter(!is.na(month))
+
+
 #Question 2
 #Use ggplot2 and your new data frame to plot the the stock of paintings on 
 # the y-axis and the date on the x-axis.
@@ -32,6 +41,12 @@ p = p + geom_point(color="red",na.rm=TRUE) +
   geom_line(color="blue")
 p = p + ggtitle("Stock of paintings at MoMA") + ylab("Stock of paintings") + xlab("Date")
 p
+
+#Q2 Alternative
+p = ggplot(df.stock_alt, aes(x=month, na.rm=TRUE))
+p = p + geom_bar(aes(y=total), stat="identity", fill="red") + labs(x="Month", y="Paintings", title="Stock of paintings per month")
+p
+
 #-what kind of geom do you think is appropriate? why
 #-color the geom you have chosen red
 #-add a title and custom axis labels
@@ -60,6 +75,36 @@ p = p + geom_area(fill="red",na.rm=TRUE)
 p = p + geom_area(aes(x=DateAcquired,y=stock2),fill="blue",colour="blue")
 p = p + ggtitle("Stock of paintings at\nMuseum of Modern Art") + ylab("Stock of paintings") + xlab("Date")
 p
+
+#Q3 Alternative, not correct
+df.stock_alt3 <- df %>%
+  filter(Classification=="Painting") %>%
+  mutate(month=month(DateAcquired, label=TRUE))%>%
+  group_by(month,CuratorApproved) %>%
+  summarise(total=n())
+
+df.stock_alt1 <- df.stock_alt3 %>%
+  filter(CuratorApproved=="Y")%>%
+  filter(!is.na(month))
+
+df.stock_alt2 <- df.stock_alt3 %>%
+  filter(CuratorApproved=="N") %>%
+  filter(!is.na(month)) %>%
+  select(month,total1=total)%>%
+  right_join(df.stock_alt)%>%
+  ungroup()%>%
+  mutate(total1=ifelse(is.na(total1),0,total1))
+
+  
+
+p = ggplot(df.stock_alt, aes(x=month),na.rm=TRUE)
+p = p + geom_bar(aes(y=df.stock_alt1$total), stat="identity", fill="red")
+p = p + geom_bar(aes(y=df.stock_alt2$total1), stat="identity", fill="blue")
+p = p + labs(x="Month", y="Paintings", title="Stock of paintings per month")
+p
+
+
+
 
 #Question 4
 #Create a new dataframe of the stock of paintings grouped by what department 
@@ -117,7 +162,7 @@ df.artistbio <- df %>%
   left_join(df.artist) %>%
   select(Artist,region,count)
 
-df.nationality = read.csv("C:/Users/Tr??ndur/Dropbox/Tr??ndur/Polit/Kandidat/E15/Social data science/Assignments/Assignment 1/nationality.csv", stringsAsFactors = FALSE, header=TRUE) %>%
+df.nationality = read.csv("C:/Users/Tróndur/Documents/GitHub/SDS_G23/nationality.csv", stringsAsFactors = FALSE, header=TRUE) %>%
   select(V1, region=V2) %>%
   mutate(region = str_trim(region))
 
@@ -131,34 +176,18 @@ df.plot_art <- df.artistbio %>%
   summarise(stock=sum(count)) %>%
   mutate(region = gsub("The United States","USA",region)) %>%
   mutate(region = gsub("Russia","USSR",region))
-  
-  
-  
-  
+
+
+
+
 country <- map_data("world")
 df.plot_art <- left_join(df.plot_art,country)
 
 p = ggplot(df.plot_art, aes(x = long, y = lat, group = group)) + 
   geom_polygon(aes(fill = stock)) 
-  expand_limits() 
-  theme_minimal()
+expand_limits() 
+theme_minimal()
 p
-
-#######Do not to use#############
-#df.artist <- df.artistbio %>%
-#  group_by(Artist,DateAcquired) %>%
-#  arrange(Artist,DateAcquired) %>%
-#  summarise(count=n()) %>% 
-#  mutate(stock = cumsum(count))
-#
-#df.artistbio <- left_join(df.artist,df.artistbio)
-#
-#df.artistbio <- df.artistbio %>%
-#  mutate(forplot = str_extract(artborn,"[:alpha:]{1,3}")) %>%
-#  arrange(Artist) %>%
-#  group_by(Artist, DateAcquired)
-#################################
-
 
 #Question 8
 #The Dimensions variable lists the dimensions of each painting. Use your data 
@@ -176,3 +205,4 @@ df.dimension <- df %>%
   filter(!is.na(area))
 head(df.dimension,5)
 tail(df.dimension,5)
+
